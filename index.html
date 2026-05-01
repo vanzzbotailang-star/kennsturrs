@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STOK KENN SETUR</title>
+
+<style>
+body{margin:0;font-family:Arial;background:#0b1020;color:white;}
+.header{text-align:center;padding:15px;}
+.menu{display:flex;gap:8px;padding:10px;}
+.menu button{flex:1;padding:10px;border:none;border-radius:10px;background:#1c223a;color:white;}
+.card{background:#121833;margin:10px;padding:15px;border-radius:12px;}
+.btn{width:100%;padding:12px;border:none;border-radius:10px;margin-top:10px;}
+.lock{position:fixed;bottom:20px;right:20px;background:red;width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.top{position:fixed;top:10px;right:15px;font-size:22px;}
+.popup{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:none;justify-content:center;align-items:center;}
+.box{background:#1c223a;padding:20px;border-radius:12px;width:90%;}
+input,select{width:100%;padding:10px;margin-top:10px;border-radius:8px;border:none;}
+</style>
+</head>
+
+<body>
+
+<div class="top" onclick="join()">⋮</div>
+
+<div class="header">
+<h2>🔥 STOK KENN SETUR 🔥</h2>
+<p>HAI KENSETUR 👋</p>
+</div>
+
+<div class="menu">
+<button onclick="filter('ALL')">ALL</button>
+<button onclick="filter('BASIC')">BASIC</button>
+<button onclick="filter('RARE')">RARE</button>
+<button onclick="filter('EPIC')">EPIC</button>
+<button onclick="filter('HIGH')">HIGH</button>
+</div>
+
+<div id="list"></div>
+
+<div class="lock" onclick="login()">🔒</div>
+
+<!-- KONFIRM -->
+<div class="popup" id="confirm">
+<div class="box">
+<h3>KONFIRMASI PEMBELIAN</h3>
+<button onclick="payment()">LANJUT</button>
+<button onclick="closeAll()">BATAL</button>
+</div>
+</div>
+
+<!-- PAYMENT -->
+<div class="popup" id="pay">
+<div class="box">
+<h3>PEMBAYARAN</h3>
+
+<p>DANA: 08123456789</p>
+
+<button onclick="qris()">BAYAR QRIS</button>
+
+<p id="total"></p>
+
+<button onclick="done()">SAYA SUDAH BAYAR</button>
+</div>
+</div>
+
+<!-- ADMIN -->
+<div class="popup" id="admin">
+<div class="box">
+<h3>ADMIN PANEL</h3>
+
+<input id="id" placeholder="ID">
+<input id="harga" placeholder="HARGA">
+
+<select id="tier">
+<option>BASIC</option>
+<option>RARE</option>
+<option>EPIC</option>
+<option>HIGH</option>
+</select>
+
+<button onclick="tambah()">TAMBAH</button>
+
+<hr>
+
+<div id="adminList"></div>
+
+<button onclick="closeAdmin()">TUTUP</button>
+</div>
+</div>
+
+<script>
+let nomor="6281234567890";
+let pilih=null;
+let filterNow="ALL";
+
+// 🔥 STORAGE
+let data=JSON.parse(localStorage.getItem("stok"))||[];
+
+function save(){
+localStorage.setItem("stok",JSON.stringify(data));
+}
+
+// RENDER
+function render(){
+let html="";
+data.forEach((d,i)=>{
+if(filterNow!="ALL" && d.cat!=filterNow) return;
+
+html+=`
+<div class="card">
+<b>${d.cat}</b>
+<p>ID: ${d.id}</p>
+<p>Rp ${d.harga}</p>
+<p style="color:${d.status=="READY"?"lime":"red"}">${d.status}</p>
+
+<button class="btn" ${d.status=="SOLD"?"disabled":""} onclick="beli(${i})">
+${d.status=="READY"?"BELI":"SOLD OUT"}
+</button>
+</div>`;
+});
+document.getElementById("list").innerHTML=html;
+}
+
+// BELI
+function beli(i){
+pilih=data[i];
+document.getElementById("confirm").style.display="flex";
+}
+
+// PAYMENT
+function payment(){
+document.getElementById("confirm").style.display="none";
+document.getElementById("pay").style.display="flex";
+document.getElementById("total").innerText="TOTAL: Rp "+pilih.harga;
+}
+
+// WA
+function done(){
+let text=`HAI KENNSTUR SAYA TELAH MEMBELI ID: ${pilih.id} NOMINAL: RP ${pilih.harga} DAN INI BUKTI TRANSFERNYA`;
+window.open("https://wa.me/"+nomor+"?text="+encodeURIComponent(text));
+}
+
+function qris(){
+let text=`HAI KENNSTUR SAYA MAU MEMBELI ID: ${pilih.id} LEWAT QRIS NOMINAL: RP ${pilih.harga}`;
+window.open("https://wa.me/"+nomor+"?text="+encodeURIComponent(text));
+}
+
+// ADMIN
+function login(){
+let p=prompt("PASSWORD?");
+if(p=="KENIMUPADMIN"){
+document.getElementById("admin").style.display="flex";
+renderAdmin();
+}else{
+alert("PASSWORD SALAH");
+}
+}
+
+function tambah(){
+let id=document.getElementById("id").value;
+let harga=document.getElementById("harga").value;
+let tier=document.getElementById("tier").value;
+
+data.push({cat:tier,id,harga,status:"READY"});
+save();
+render();
+renderAdmin();
+}
+
+// TOGGLE
+function renderAdmin(){
+let html="";
+data.forEach((d,i)=>{
+html+=`
+<div>
+${d.id} - ${d.status}
+<button onclick="toggle(${i})">TOGGLE</button>
+</div>`;
+});
+document.getElementById("adminList").innerHTML=html;
+}
+
+function toggle(i){
+data[i].status=data[i].status=="READY"?"SOLD":"READY";
+save();
+render();
+renderAdmin();
+}
+
+// OTHER
+function filter(c){filterNow=c;render();}
+function closeAll(){document.getElementById("confirm").style.display="none";document.getElementById("pay").style.display="none";}
+function closeAdmin(){document.getElementById("admin").style.display="none";}
+function join(){window.open("https://whatsapp.com/channel/ISI_LINK");}
+
+// INIT
+render();
+</script>
+
+</body>
+</html>
